@@ -18,7 +18,7 @@ module practice::exchange {
         transfer::share_object(Pool { id, reserve_a, reserve_b });
     }
 
-    public entry fun trade_a<A, B>(pool: &mut Pool<A, B>, a: Coin<A>, ctx: &mut TxContext) {
+    public entry fun swap_a<A, B>(pool: &mut Pool<A, B>, a: Coin<A>, min_out: u64, ctx: &mut TxContext) {
         let input_amount = coin::value(&a);
 
         let reserve_amount_a = balance::value(&pool.reserve_a);
@@ -26,11 +26,28 @@ module practice::exchange {
         
         let k = reserve_amount_a * reserve_amount_b;
         let output_amount = reserve_amount_b - (k / (reserve_amount_a + input_amount));
+        assert!(output_amount >= min_out, 0);
 
         let output_coin = coin::withdraw(&mut pool.reserve_b, output_amount, ctx);
         transfer::transfer(output_coin, tx_context::sender(ctx));
         coin::deposit(&mut pool.reserve_a, a);
     }
+
+    public entry fun swap_b<A, B>(pool: &mut Pool<A, B>, b: Coin<B>, min_out: u64, ctx: &mut TxContext) {
+        let input_amount = coin::value(&b);
+
+        let reserve_amount_a = balance::value(&pool.reserve_a);
+        let reserve_amount_b = balance::value(&pool.reserve_b);
+        
+        let k = reserve_amount_a * reserve_amount_b;
+        let output_amount = reserve_amount_a - (k / (reserve_amount_b + input_amount));
+        assert!(output_amount >= min_out, 0);
+
+        let output_coin = coin::withdraw(&mut pool.reserve_a, output_amount, ctx);
+        transfer::transfer(output_coin, tx_context::sender(ctx));
+        coin::deposit(&mut pool.reserve_b, b);
+    }
+
 
     struct TEST_TOKEN_A has drop {} 
     struct TEST_TOKEN_B has drop {}
