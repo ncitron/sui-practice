@@ -21,10 +21,12 @@ module practice::share_bug {
 
         create(test_scenario::ctx(scenario));
 
-        let thing_wrapper = test_scenario::take_shared<Thing>(scenario); 
-        let thing = test_scenario::borrow_mut(&mut thing_wrapper);
+        test_scenario::next_tx(scenario, &user);
 
-        assert!(1 == 0, 0);
+        let thing_wrapper = test_scenario::take_shared<Thing>(scenario); 
+        let _thing = test_scenario::borrow_mut(&mut thing_wrapper);
+
+        // assert!(1 == 0, 0);
 
         test_scenario::return_shared(scenario, thing_wrapper);
     }

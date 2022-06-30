@@ -24,8 +24,7 @@ module practice::exchange {
         let reserve_amount_a = balance::value(&pool.reserve_a);
         let reserve_amount_b = balance::value(&pool.reserve_b);
         
-        let k = reserve_amount_a * reserve_amount_b;
-        let output_amount = reserve_amount_b - (k / (reserve_amount_a + input_amount));
+        let output_amount = input_amount * reserve_amount_b / (reserve_amount_a + input_amount);
         assert!(output_amount >= min_out, 0);
 
         let output_coin = coin::withdraw(&mut pool.reserve_b, output_amount, ctx);
@@ -39,8 +38,7 @@ module practice::exchange {
         let reserve_amount_a = balance::value(&pool.reserve_a);
         let reserve_amount_b = balance::value(&pool.reserve_b);
         
-        let k = reserve_amount_a * reserve_amount_b;
-        let output_amount = reserve_amount_a - (k / (reserve_amount_b + input_amount));
+        let output_amount = input_amount * reserve_amount_a / (reserve_amount_b + input_amount);
         assert!(output_amount >= min_out, 0);
 
         let output_coin = coin::withdraw(&mut pool.reserve_a, output_amount, ctx);
@@ -68,4 +66,70 @@ module practice::exchange {
         let coins = coin::mint<TEST_TOKEN_B>(amount, cap, ctx);
         transfer::transfer(coins, tx_context::sender(ctx));
     }
+
+    #[test]
+    fun test_invariant() {
+        use sui::test_scenario;
+
+        let pool_creator = @0x123;
+
+        let scenario = &mut test_scenario::begin(&pool_creator);
+        {
+            init(test_scenario::ctx(scenario));
+        };
+
+        test_scenario::next_tx(scenario, &pool_creator);
+        {
+            let cap = test_scenario::take_owned<TreasuryCap<TEST_TOKEN_A>>(scenario);
+            mint_a(&mut cap, 1500, test_scenario::ctx(scenario));    
+            test_scenario::return_owned(scenario, cap);
+        };
+
+        test_scenario::next_tx(scenario, &pool_creator);
+        {
+            let cap = test_scenario::take_owned<TreasuryCap<TEST_TOKEN_B>>(scenario);
+            mint_b(&mut cap, 650, test_scenario::ctx(scenario));    
+            test_scenario::return_owned(scenario, cap);
+        };
+
+        test_scenario::next_tx(scenario, &pool_creator);
+        {
+            let coins_a = test_scenario::take_owned<Coin<TEST_TOKEN_A>>(scenario);
+            let coins_b = test_scenario::take_owned<Coin<TEST_TOKEN_B>>(scenario);
+
+            create(coins_a, coins_b, test_scenario::ctx(scenario));
+        };
+
+        test_scenario::next_tx(scenario, &pool_creator);
+        {
+            let cap = test_scenario::take_owned<TreasuryCap<TEST_TOKEN_A>>(scenario);
+            mint_a(&mut cap, 250, test_scenario::ctx(scenario));
+            test_scenario::return_owned(scenario, cap);
+        };
+
+        let pool_wrapper = test_scenario::take_shared<Pool<TEST_TOKEN_A, TEST_TOKEN_B>>(scenario);
+        let pool = test_scenario::borrow_mut(&mut pool_wrapper);
+
+        let reserve_amount_a = balance::value(&pool.reserve_a);
+        let reserve_amount_b = balance::value(&pool.reserve_b);
+        let init_k = reserve_amount_a * reserve_amount_b;
+
+        test_scenario::next_tx(scenario, &pool_creator);
+        {
+            let coin = test_scenario::take_owned<Coin<TEST_TOKEN_A>>(scenario);
+            swap_a(pool, coin, 0, test_scenario::ctx(scenario));
+        };
+
+        test_scenario::next_tx(scenario, &pool_creator);
+        
+        let reserve_amount_a = balance::value(&pool.reserve_a);
+        let reserve_amount_b = balance::value(&pool.reserve_b);
+        let final_k = reserve_amount_a * reserve_amount_b;
+
+        assert!(final_k >= init_k - reserve_amount_a, 0);
+        assert!(final_k <= init_k + reserve_amount_a, 0);
+        
+        test_scenario::return_shared(scenario, pool_wrapper);
+    }
 }
+

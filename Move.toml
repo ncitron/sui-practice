@@ -3,7 +3,7 @@ name = "practice"
 version = "0.0.1"
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "6ec1acdd7a338e21cbe5f5d516c4fe6e04ea03bf"}
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework", rev = "3afb387da4756ad54b5585fbcca45e681f2680ac"}
 
 [addresses]
 practice = "0x0"
