@@ -1,0 +1,17 @@
+{
+  "name": "sui-practice",
+  "version": "0.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:ncitron/sui-practice.git",
+  "author": "Noah Citron <noah@jeff.org>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  },
+  "scripts": {
+    "start": "yarn tsc && node dist/index.js"
+  },
+  "dependencies": {
+    "@mysten/sui.js": "^0.3.0"
+  }
+}
